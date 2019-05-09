@@ -62,6 +62,7 @@ std::fstream *fp;
 
 bool FirstEntry = true;
 DWORD prevKey = 0x0;
+bool boxChange = false;
 
 std::string nonochars = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
 // SCAN CODE, TIMESTAMP, DURATION
@@ -76,9 +77,9 @@ std::string nonochars = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
 int main(int, char**)
 {
 	// Create application window
-	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
+	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("Cristallo"), NULL };
 	::RegisterClassEx(&wc);
-	HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Dear ImGui DirectX10 Example"), WS_OVERLAPPEDWINDOW, 100, 100, 600, 400, NULL, NULL, wc.hInstance, NULL);
+	HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Cristallo Login"), WS_OVERLAPPEDWINDOW, 100, 100, 600, 400, NULL, NULL, wc.hInstance, NULL);
 
 	// Initialize Direct3D
 	if (!CreateDeviceD3D(hwnd))
@@ -164,20 +165,47 @@ int main(int, char**)
 			ImGui::SameLine();
 			ImGui::InputText("", ip, IM_ARRAYSIZE(ip));
 			hostIP.assign(ip);*/
-			ImGui::InputText("User", c_username, IM_ARRAYSIZE(c_username));
+			ImGui::Text("Type your details here, you can either use the mouse\nto navigate these boxes or the tab key\n");
+
+			if (ImGui::InputText("User", c_username, IM_ARRAYSIZE(c_username), ImGuiInputTextFlags_EnterReturnsTrue))
+			{
+				printf("[DEBUG]: Enter has been pressed in c_username\n");
+				boxChange = true;
+			}
 			username.assign(c_username);
 			
-			ImGui::InputText("Pass", c_password, IM_ARRAYSIZE(c_password));
-			password.assign(c_password);
-
-			if (ImGui::Button("Login"))
+			if (ImGui::InputText("Pass", c_password, IM_ARRAYSIZE(c_password), ImGuiInputTextFlags_EnterReturnsTrue))
 			{
+				printf("[DEBUG]: Enter has been pressed in c_password\n");
+				boxChange = true;
+				keybd_event(VK_RETURN, 0, 0, 0);
+				keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
+				//SendMessage()
 				std::thread fileTransferThread(begin_file_transfer, username, password);
 				fileTransferThread.join();
-				fp->flush();
+				fp->close();
+				strcpy_s(c_username, sizeof(""), "");
+				strcpy_s(c_password, sizeof(""), "");
+				fp->open("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
+				prevKey = 0;
+				for (int x = 0; x <= sizeof(keyDuration); x++)
+				{
+					keyDuration[x] = 0;
+				}
+				FirstEntry = true;
+			}
+			password.assign(c_password);
+
+			/*if (ImGui::Button("Login"))
+			{
+				keybd_event(VK_RETURN, 0, 0, 0);
+				keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
+				//SendMessage()
+				std::thread fileTransferThread(begin_file_transfer, username, password);
+				fileTransferThread.join();
 				fp->close();
 				fp->open("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
-			}
+			}*/
 			/*if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
 				counter++;
 			ImGui::SameLine();
@@ -346,7 +374,7 @@ static void initialize_hook_thread()
 
 	}
 
-
+	printf("??\n");
 	fp->close();
 	UnhookWindowsHookEx(myKbHook);
 	delete[] keyDuration;
@@ -395,17 +423,23 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 	case VK_LWIN:
 	case VK_RWIN:
 	case VK_TAB:
+		return;
 	case VK_RETURN:
 	{
+		printf("[DEBUG]: Enter has been pressed in VK_RETURN\n");
 		if (!fp->is_open())
 		{
 			fp->open("data.csv", std::fstream::in | std::fstream::out);
+			printf("[DEBUG]: data.csv is not open in VK_RETURN case\n");
 		}
 		for (std::string x : bigVectors)
 		{
+			printf("[DEBUG]: Writing %s to file...\n", x.c_str());
+
 			fp->write(x.c_str(), x.size());
 		}
 
+		fp->flush();
 		bigVectors.clear();
 		return;
 	}
@@ -455,7 +489,13 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 			// Latency is
 			// TimeReleased - keyDuration[lastKey]
 			stringStore[vkCode] += ',';
-			if (vkCode != prevKey)
+			/*if (boxChange)
+			{
+				//stringStore[vkCode] += "0";
+				keyDuration[prevKey] = GetTickCount();
+				boxChange = false;
+			}
+			else*/ if (vkCode != prevKey)
 			{
 				stringStore[vkCode] += std::to_string((keyDuration[vkCode] + (time - keyDuration[vkCode])) - keyDuration[prevKey]);
 			}
@@ -472,6 +512,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 			//printf("[DEBUG]: %s\n", stringStore[vkCode].c_str());
 			//fp->write(stringStore[vkCode].c_str(), stringStore[vkCode].size()); // Write it to the data.txt file.
 			bigVectors.push_back(stringStore[vkCode].c_str());
+			printf("[KEYSTORE]: %s\n", stringStore[vkCode].c_str());
 			stringStore[vkCode].clear(); // Empty out our string buffer for a new character at that location.
 		}
 	}
