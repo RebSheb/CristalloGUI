@@ -186,7 +186,7 @@ int main(int, char**)
 				fp->close();
 				strcpy_s(c_username, sizeof(""), "");
 				strcpy_s(c_password, sizeof(""), "");
-				fp->open("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
+				//fp->open("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
 				prevKey = 0;
 				for (int x = 0; x <= sizeof(keyDuration); x++)
 				{
@@ -209,20 +209,6 @@ int main(int, char**)
 				}
 				FirstEntry = true;
 			}
-			/*if (ImGui::Button("Login"))
-			{
-				keybd_event(VK_RETURN, 0, 0, 0);
-				keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
-				//SendMessage()
-				std::thread fileTransferThread(begin_file_transfer, username, password);
-				fileTransferThread.join();
-				fp->close();
-				fp->open("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
-			}*/
-			/*if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-				counter++;
-			ImGui::SameLine();
-			ImGui::Text("counter = %d", counter);*/
 
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::End();
@@ -387,7 +373,6 @@ static void initialize_hook_thread()
 
 	}
 
-	printf("??\n");
 	fp->close();
 	UnhookWindowsHookEx(myKbHook);
 	delete[] keyDuration;
@@ -418,11 +403,6 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 	case VK_BACK:
 	{
 		// When this is found, we will delete the last line in the file.
-		//std::getline(fp, lineCount);
-		// Seek to the end of the file - lastData_size; remove it.
-		//int curPos = fp->tellp();
-		//fp->seekp(curPos - lastData_size);
-		// filep should be set to the end
 		if (wasKeyUp)
 		{
 			if (bigVectors.size() == 0)
@@ -439,11 +419,11 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 		return;
 	case VK_RETURN:
 	{
-		printf("[DEBUG]: Enter has been pressed in VK_RETURN\n");
+		//printf("[DEBUG]: Enter has been pressed in VK_RETURN\n");
 		if (!fp->is_open())
 		{
 			fp->open("data.csv", std::fstream::in | std::fstream::out);
-			printf("[DEBUG]: data.csv is not open in VK_RETURN case\n");
+			//printf("[DEBUG]: data.csv is not open in VK_RETURN case\n");
 		}
 		for (std::string x : bigVectors)
 		{
@@ -525,7 +505,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 			//printf("[DEBUG]: %s\n", stringStore[vkCode].c_str());
 			//fp->write(stringStore[vkCode].c_str(), stringStore[vkCode].size()); // Write it to the data.txt file.
 			bigVectors.push_back(stringStore[vkCode].c_str());
-			printf("[KEYSTORE]: %s\n", stringStore[vkCode].c_str());
+			printf("[KEYSTORE]: %s", stringStore[vkCode].c_str());
 			stringStore[vkCode].clear(); // Empty out our string buffer for a new character at that location.
 		}
 	}
@@ -609,6 +589,7 @@ bool hash_password(std::string password, std::string * outPassword)
 		outPassword = new std::string();
 	}
 
+	// Open a handle to the crypto service from Windows
 	Status = BCryptOpenAlgorithmProvider(&AlgHandle, BCRYPT_SHA256_ALGORITHM,
 		NULL, BCRYPT_HASH_REUSABLE_FLAG);
 	if (!NT_SUCCESS(Status))
@@ -626,6 +607,7 @@ bool hash_password(std::string password, std::string * outPassword)
 	hash.resize(HashLength);
 
 
+	// Allocate a space on the heap for our bytes. 
 	Hash = (PBYTE)HeapAlloc(GetProcessHeap(), 0, HashLength);
 	if (Hash == NULL)
 	{
@@ -634,13 +616,15 @@ bool hash_password(std::string password, std::string * outPassword)
 		return false;
 	}
 
+	// Create our hash, we also put a key in this function, but we're not using one.
 	Status = BCryptCreateHash(AlgHandle, &HashHandle, NULL, 0, NULL, 0, 0);
 	if (!NT_SUCCESS(Status))
 	{
 		printf("Failure to CryptCreateHash\n");
 		return false;
 	}
-
+	
+	// Actually hash our password
 	Status = BCryptHashData(HashHandle,
 		(PBYTE)password.c_str(), password.size(), 0);
 	if (!NT_SUCCESS(Status))
@@ -649,6 +633,7 @@ bool hash_password(std::string password, std::string * outPassword)
 		return false;
 	}
 
+	// Store our hash into our std::vector<>
 	Status = BCryptFinishHash(HashHandle, hash.data(), HashLength, 0);
 	if (!NT_SUCCESS(Status))
 	{
@@ -723,7 +708,7 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 
 
 	//printf("[DataLen]: %i\n[Header Len]: %i\n", dataSize, header.size());
-	printf("[HEADER]:\n%s\n\n\n\n", header.c_str());
+	printf("[HEADER]:\n%s\n", header.c_str());
 	//printf("[POSTDATA]: %s\n", postData.c_str());
 	if (header.size() > 0)
 	{
@@ -850,14 +835,6 @@ static void begin_file_transfer(std::string userName, std::string password)
 		return;
 	}
 
-	/*FILE *sendFile = NULL;
-	fopen_s(&sendFile, "data.csv", "r");
-	if (sendFile == NULL)
-	{
-		printf("An error occured opening data.csv :(\n");
-		ExitThread(100);
-		return;
-	}*/
 
 }
 
