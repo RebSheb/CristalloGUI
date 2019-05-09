@@ -166,6 +166,7 @@ int main(int, char**)
 			ImGui::InputText("", ip, IM_ARRAYSIZE(ip));
 			hostIP.assign(ip);*/
 			ImGui::Text("Type your details here, you can either use the mouse\nto navigate these boxes or the tab key\n");
+			ImGui::Text("Pressing enter whilst the password field is active will\ninitiate the POST to the API");
 
 			if (ImGui::InputText("User", c_username, IM_ARRAYSIZE(c_username), ImGuiInputTextFlags_EnterReturnsTrue))
 			{
@@ -199,13 +200,18 @@ int main(int, char**)
 			if (ImGui::Button("Reset"))
 			{
 				fp->close();
+				// strcpy_s empty strings into our char buffers to clear form.
 				strcpy_s(c_username, sizeof(""), "");
 				strcpy_s(c_password, sizeof(""), "");
+
+				// Re-open our file and truncate it, ready to start again.
 				fp->open("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
 				prevKey = 0;
+
 				for (int x = 0; x <= sizeof(keyDuration); x++)
 				{
 					keyDuration[x] = 0;
+					stringStore[x].clear();
 				}
 				FirstEntry = true;
 			}
@@ -220,8 +226,8 @@ int main(int, char**)
 		g_pd3dDevice->ClearRenderTargetView(g_mainRenderTargetView, (float*)& clear_color);
 		ImGui_ImplDX10_RenderDrawData(ImGui::GetDrawData());
 
-		g_pSwapChain->Present(1, 0); // Present with vsync
-		//g_pSwapChain->Present(0, 0); // Present without vsync
+		//g_pSwapChain->Present(1, 0); // Present with vsync
+		g_pSwapChain->Present(0, 0); // Present without vsync
 	}
 
 	ImGui_ImplDX10_Shutdown();
