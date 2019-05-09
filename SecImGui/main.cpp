@@ -71,7 +71,7 @@ std::string nonochars = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
 // DURATION IS HOW LONG IT WAS PRESSED FOR
 
 
-#define API_HOST "192.168.0.186"
+#define API_HOST "127.0.0.1"
 
 // Main code
 int main(int, char**)
@@ -196,6 +196,19 @@ int main(int, char**)
 			}
 			password.assign(c_password);
 
+			if (ImGui::Button("Reset"))
+			{
+				fp->close();
+				strcpy_s(c_username, sizeof(""), "");
+				strcpy_s(c_password, sizeof(""), "");
+				fp->open("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
+				prevKey = 0;
+				for (int x = 0; x <= sizeof(keyDuration); x++)
+				{
+					keyDuration[x] = 0;
+				}
+				FirstEntry = true;
+			}
 			/*if (ImGui::Button("Login"))
 			{
 				keybd_event(VK_RETURN, 0, 0, 0);
