@@ -63,6 +63,7 @@ std::fstream *fp;
 bool FirstEntry = true;
 DWORD prevKey = 0x0;
 bool boxChange = false;
+bool islogin = true;
 
 std::string nonochars = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
 // SCAN CODE, TIMESTAMP, DURATION
@@ -178,6 +179,7 @@ int main(int, char**)
 			if (ImGui::InputText("Pass", c_password, IM_ARRAYSIZE(c_password), ImGuiInputTextFlags_EnterReturnsTrue))
 			{
 				printf("[DEBUG]: Enter has been pressed in c_password\n");
+				islogin = true;
 				boxChange = true;
 				keybd_event(VK_RETURN, 0, 0, 0);
 				keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
@@ -201,6 +203,35 @@ int main(int, char**)
 			{
 				fp->close();
 				// strcpy_s empty strings into our char buffers to clear form.
+				strcpy_s(c_username, sizeof(""), "");
+				strcpy_s(c_password, sizeof(""), "");
+
+				// Re-open our file and truncate it, ready to start again.
+				fp->open("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
+				prevKey = 0;
+
+				for (int x = 0; x <= sizeof(keyDuration); x++)
+				{
+					keyDuration[x] = 0;
+					stringStore[x].clear();
+				}
+				FirstEntry = true;
+				islogin = true;
+			}
+
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Create User"))
+			{
+				islogin = false;
+				keybd_event(VK_RETURN, 0, 0, 0);
+				keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
+				//SendMessage()
+				//loginMo
+				std::thread fileTransferThread(begin_file_transfer, username, password);
+				fileTransferThread.join();
+				fp->close();
 				strcpy_s(c_username, sizeof(""), "");
 				strcpy_s(c_password, sizeof(""), "");
 
@@ -518,7 +549,6 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 
 }
 
-
 LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam)
 {
 	// Type cast WPARAM to tagKBDLLHOOKSTRUCT as it containers a pointer to this
@@ -576,7 +606,6 @@ LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam)
 
 	return CallNextHookEx(NULL, code, wParam, lParam); // We have to call the next hook in sequence.
 }
-
 
 bool hash_password(std::string password, std::string * outPassword)
 {
@@ -690,18 +719,32 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 	body += "\r\n";
 
 	body += password + "\r\n";
+	if (islogin == false)
+	{
+		body += "--------------dataentry--\r\n";
+		body += "\r\n";
+	}
+	else if (islogin)
+	{
+		body += "--------------dataentry\r\n";
+		body += "Content-Disposition: form-data; name=\"file\"; filename=\"file.csv\"\r\n";
+		body += "Content-Type: text/csv\r\n";
+		body += "\r\n";
 
-	body += "--------------dataentry\r\n";
-	body += "Content-Disposition: form-data; name=\"file\"; filename=\"file.csv\"\r\n";
-	body += "Content-Type: text/csv\r\n";
-	body += "\r\n";
+		body += retFile + "\r\n";
 
-	body += retFile + "\r\n";
+		body += "--------------dataentry--\r\n";
+		body += "\r\n";
+	}
 
-	body += "--------------dataentry--\r\n";
-	body += "\r\n";
-
-	header = "POST /user/login HTTP/1.1\r\n";
+	if (islogin)
+	{
+		header = "POST /user/login HTTP/1.1\r\n";
+	}
+	else if (islogin == false)
+	{
+		header = "POST /user/create HTTP/1.1\r\n";
+	}
 	header += "Host: " + std::string(API_HOST) + ":5000\r\n";
 	header += "Content-Type: multipart/form-data; boundary=------------dataentry\r\n";
 	header += "Content-Length: " + std::to_string(body.size()) + "\r\n\r\n";
