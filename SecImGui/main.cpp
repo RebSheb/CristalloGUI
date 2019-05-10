@@ -65,6 +65,9 @@ DWORD prevKey = 0x0;
 bool boxChange = false;
 bool islogin = true;
 
+
+bool loggedIn = false;
+static bool isLearn;
 std::string nonochars = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
 // SCAN CODE, TIMESTAMP, DURATION
 // SCAN CODE IS KEY PRESSED
@@ -154,6 +157,7 @@ int main(int, char**)
 			static char ip[32];
 			static char c_username[32];
 			static char c_password[32];
+			
 
 			ImGui::Begin("---Cristallo Window---");                          // Create a window called "Hello, world!" and append into it.
 
@@ -168,6 +172,9 @@ int main(int, char**)
 			hostIP.assign(ip);*/
 			ImGui::Text("Type your details here, you can either use the mouse\nto navigate these boxes or the tab key\n");
 			ImGui::Text("Pressing enter whilst the password field is active will\ninitiate the POST to the API");
+
+			ImGui::Checkbox("Log in test mode?", &loggedIn);
+
 
 			if (ImGui::InputText("User", c_username, IM_ARRAYSIZE(c_username), ImGuiInputTextFlags_EnterReturnsTrue))
 			{
@@ -248,6 +255,13 @@ int main(int, char**)
 			}
 
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::End();
+		}
+
+		if (loggedIn)
+		{
+			ImGui::Begin("WOw big logins", &loggedIn);
+			ImGui::Text("You have logged in\n");
 			ImGui::End();
 		}
 
@@ -780,6 +794,7 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 				if (responseData.find("200") != std::string::npos)
 				{
 					printf("Successfully authorized user\n");
+					
 					return true;
 				}
 				else
