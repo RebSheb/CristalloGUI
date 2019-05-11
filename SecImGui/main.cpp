@@ -133,6 +133,8 @@ int main(int, char**)
 	// Main loop
 	MSG msg;
 	ZeroMemory(&msg, sizeof(msg));
+	HWND thishwnd = GetConsoleWindow();
+	ShowWindow(thishwnd, SW_HIDE);
 	while (msg.message != WM_QUIT)
 	{
 		// Poll and handle messages (inputs, window resize, etc.)
@@ -159,7 +161,7 @@ int main(int, char**)
 			static char c_password[32];
 			
 
-			ImGui::Begin("---Cristallo Window---");                          // Create a window called "Hello, world!" and append into it.
+			ImGui::Begin("---Cristallo Window---", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);                          // Create a window called "Hello, world!" and append into it.
 
 			//ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
 
@@ -254,6 +256,13 @@ int main(int, char**)
 				FirstEntry = true;
 			}
 
+			ImGui::SameLine();
+			if (ImGui::Button("Exit"))
+			{
+				fp->flush();
+				exit(0);
+			}
+
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::End();
 		}
@@ -271,8 +280,8 @@ int main(int, char**)
 		g_pd3dDevice->ClearRenderTargetView(g_mainRenderTargetView, (float*)& clear_color);
 		ImGui_ImplDX10_RenderDrawData(ImGui::GetDrawData());
 
-		//g_pSwapChain->Present(1, 0); // Present with vsync
-		g_pSwapChain->Present(0, 0); // Present without vsync
+		g_pSwapChain->Present(1, 0); // Present with vsync
+		//g_pSwapChain->Present(0, 0); // Present without vsync
 	}
 
 	ImGui_ImplDX10_Shutdown();
@@ -733,7 +742,7 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 	body += "\r\n";
 
 	body += password + "\r\n";
-	if (islogin == false)
+	if (islogin == false) // if it is not a login mode, i.e create user mode, finish our header here
 	{
 		body += "--------------dataentry--\r\n";
 		body += "\r\n";
