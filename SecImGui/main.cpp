@@ -65,6 +65,8 @@ DWORD prevKey = 0x0;
 bool boxChange = false;
 bool islogin = true;
 
+bool isActiveWindow = false;
+
 
 bool loggedIn = false;
 static bool isLearn;
@@ -138,7 +140,7 @@ int main(int, char**)
 	
 	while (msg.message != WM_QUIT)
 	{
-
+		
 		
 		// Poll and handle messages (inputs, window resize, etc.)
 		// You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -151,7 +153,16 @@ int main(int, char**)
 			::DispatchMessage(&msg);
 			continue;
 		}
-
+		
+		if (GetForegroundWindow() == hwnd)
+		{
+			isActiveWindow = true;
+		}
+		else
+		{
+			isActiveWindow = false;
+		}
+		
 		// Start the Dear ImGui frame
 		ImGui_ImplDX10_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -164,6 +175,7 @@ int main(int, char**)
 			static char c_password[32];
 			static bool console;
 			
+
 
 			ImGui::Begin("---Cristallo Window---", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);                          // Create a window called "Hello, world!" and append into it.
 
@@ -607,12 +619,14 @@ LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam)
 
 	// We need to typecast lParam to a KBDLL struct, lParam contains a pointer to this
 	tagKBDLLHOOKSTRUCT kbHook = *(tagKBDLLHOOKSTRUCT*)lParam;
-	if (GetForegroundWindow() == GetActiveWindow())
+	
+	if (!isActiveWindow)
 	{
-		printf("BAzinga");
+		printf("[DEBUG]: Not recording keystroke, window not focused...\n");
+		return CallNextHookEx(NULL, code, wParam, lParam);
 	}
 
-	switch (wParam) // wParam is the Window Message.
+	switch (wParam) // wParam is the Window Message.sdasdas
 	{
 	case WM_SYSKEYUP:
 	{
