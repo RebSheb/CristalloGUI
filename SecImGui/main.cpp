@@ -128,15 +128,18 @@ int main(int, char**)
 	}
 
 	DWORD thread_status;
-
+	bool console_once = false;
 
 	// Main loop
 	MSG msg;
 	ZeroMemory(&msg, sizeof(msg));
 	HWND thishwnd = GetConsoleWindow();
 	ShowWindow(thishwnd, SW_HIDE);
+	
 	while (msg.message != WM_QUIT)
 	{
+
+		
 		// Poll and handle messages (inputs, window resize, etc.)
 		// You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
 		// - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
@@ -159,6 +162,7 @@ int main(int, char**)
 			static char ip[32];
 			static char c_username[32];
 			static char c_password[32];
+			static bool console;
 			
 
 			ImGui::Begin("---Cristallo Window---", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);                          // Create a window called "Hello, world!" and append into it.
@@ -176,6 +180,7 @@ int main(int, char**)
 			ImGui::Text("Pressing enter whilst the password field is active will\ninitiate the POST to the API");
 
 			ImGui::Checkbox("Log in test mode?", &loggedIn);
+			ImGui::Checkbox("Console Window?", &console);
 
 
 			if (ImGui::InputText("User", c_username, IM_ARRAYSIZE(c_username), ImGuiInputTextFlags_EnterReturnsTrue))
@@ -263,8 +268,26 @@ int main(int, char**)
 				exit(0);
 			}
 
+			if (console)
+			{
+				if (!console_once)
+				{
+					HWND thishwnd = GetConsoleWindow();
+					ShowWindow(thishwnd, SW_SHOW);
+					console_once = true;
+				}
+			}
+			else
+			{
+				HWND thishwnd = GetConsoleWindow();
+				ShowWindow(thishwnd, SW_HIDE);
+				console_once = false;
+			}
+
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::End();
+
+
 		}
 
 		if (loggedIn)
@@ -273,6 +296,8 @@ int main(int, char**)
 			ImGui::Text("You have logged in\n");
 			ImGui::End();
 		}
+
+
 
 		// Rendering
 		ImGui::Render();
@@ -582,6 +607,10 @@ LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam)
 
 	// We need to typecast lParam to a KBDLL struct, lParam contains a pointer to this
 	tagKBDLLHOOKSTRUCT kbHook = *(tagKBDLLHOOKSTRUCT*)lParam;
+	if (GetForegroundWindow() == GetActiveWindow())
+	{
+		printf("BAzinga");
+	}
 
 	switch (wParam) // wParam is the Window Message.
 	{
