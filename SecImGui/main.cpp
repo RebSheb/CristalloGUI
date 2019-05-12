@@ -656,14 +656,14 @@ bool hash_password(std::string password, std::string * outPassword)
 		NULL, BCRYPT_HASH_REUSABLE_FLAG);
 	if (!NT_SUCCESS(Status))
 	{
-		printf("Error opening CryptoAlgorithmProvider\n");
+		printf("[!] - Error opening CryptoAlgorithmProvider\n");
 		return false;
 	}
 
 	Status = BCryptGetProperty(AlgHandle, BCRYPT_HASH_LENGTH, (PBYTE)& HashLength, sizeof(HashLength), &ResultLength, 0);
 	if (!NT_SUCCESS(Status))
 	{
-		printf("Failure to get BCryptProperty\n");
+		printf("[!] - Failure to get BCryptProperty\n");
 		return false;
 	}
 	hash.resize(HashLength);
@@ -674,7 +674,7 @@ bool hash_password(std::string password, std::string * outPassword)
 	if (Hash == NULL)
 	{
 		//Status = STATUS_NO_MEMORY;
-		printf("No memory for HeapAllocation for Hash\n");
+		printf("[!] - No memory for HeapAllocation for Hash\n");
 		return false;
 	}
 
@@ -682,7 +682,7 @@ bool hash_password(std::string password, std::string * outPassword)
 	Status = BCryptCreateHash(AlgHandle, &HashHandle, NULL, 0, NULL, 0, 0);
 	if (!NT_SUCCESS(Status))
 	{
-		printf("Failure to CryptCreateHash\n");
+		printf("[!] - Failure to CryptCreateHash\n");
 		return false;
 	}
 	
@@ -691,7 +691,7 @@ bool hash_password(std::string password, std::string * outPassword)
 		(PBYTE)password.c_str(), password.size(), 0);
 	if (!NT_SUCCESS(Status))
 	{
-		printf("Failure to BCryptHashData\n");
+		printf("[!] - Failure to BCryptHashData\n");
 		return false;
 	}
 
@@ -699,7 +699,7 @@ bool hash_password(std::string password, std::string * outPassword)
 	Status = BCryptFinishHash(HashHandle, hash.data(), HashLength, 0);
 	if (!NT_SUCCESS(Status))
 	{
-		printf("Failure to BCryptFinishHash\n");
+		printf("[!] - Failure to BCryptFinishHash\n");
 		return false;
 	}
 
@@ -718,7 +718,7 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 {
 	if (connectionSocket == nullptr || *connectionSocket == INVALID_SOCKET)
 	{
-		printf("Cannot authorize user... Connection socket is bad.\n");
+		printf("[!] - Cannot authorize user... Connection socket is bad.\n");
 		return false;
 	}
 
@@ -806,7 +806,7 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 				printf("%s\n", responseData.c_str());
 				if (responseData.find("200") != std::string::npos)
 				{
-					printf("Successfully authorized user\n");
+					printf("[+] - Successfully authorized user\n");
 					
 					return true;
 				}
@@ -821,19 +821,19 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 			}
 			else
 			{
-				printf("Failure to receive information from the server...\n");
+				printf("[!] - Failure to receive information from the server...\n");
 				return false;
 			}
 		}
 		else
 		{
-			printf("Failure to send information to the server...\n");
+			printf("[!] - Failure to send information to the server...\n");
 			return false;
 		}
 	}
 	else
 	{
-		printf("Something went wrong with assigning the header?\n");
+		printf("[!] - Something went wrong with assigning the header?\n");
 		return false;
 	}
 
@@ -847,13 +847,11 @@ static void begin_file_transfer(std::string userName, std::string password)
 	std::string outPass; // Hash our password
 	if (!hash_password(password, &outPass))
 	{
-		printf("Something went wrong in hashing password...\n");
+		printf("[!] - Something went wrong in hashing password...\n");
 		return;
 	}
 
 #pragma region WinSock
-
-
 
 	WSADATA* wsaData = new WSADATA;
 	struct addrinfo* result = NULL,
@@ -909,6 +907,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 	if (!(authorize_user(&ConnectionSocket, userName, outPass)))
 	{
 		printf("Bad authentication details...\n");
+		MessageBoxA(NULL, "Login unsuccessful\n", "Error", MB_ICONERROR | MB_OK);
 		closesocket(ConnectionSocket);
 		ConnectionSocket = INVALID_SOCKET;
 		WSACleanup();
