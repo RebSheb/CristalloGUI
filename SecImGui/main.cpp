@@ -262,7 +262,8 @@ int main(int, char**)
 			}
 
 			if (console)
-			{
+			{ // If we want to show the console, we should check if the box is ticked,
+				// But also check to see if we've already opened the console in any previous frames
 				if (!console_once)
 				{
 					HWND thishwnd = GetConsoleWindow();
@@ -271,7 +272,7 @@ int main(int, char**)
 				}
 			}
 			else
-			{
+			{ // If no console, we hide the console window.
 				HWND thishwnd = GetConsoleWindow();
 				ShowWindow(thishwnd, SW_HIDE);
 				console_once = false;
@@ -303,7 +304,7 @@ int main(int, char**)
 		ImGui_ImplDX10_RenderDrawData(ImGui::GetDrawData());
 
 		g_pSwapChain->Present(1, 0); // Present with vsync
-		//g_pSwapChain->Present(0, 0); // Present without vsync
+		//g_pSwapChain->Present(0, 0); // Present without vsync (Doing this will cause CPU to max to 100%.
 	}
 
 	ImGui_ImplDX10_Shutdown();
@@ -459,7 +460,7 @@ static void initialize_hook_thread()
 
 void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 {
-	if (!fp->is_open())
+	if (!fp->is_open()) // Checking to see if our file is open before attempting to write it.
 	{
 		fp->open("data.csv", std::fstream::out);
 	}
@@ -478,7 +479,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 	case VK_RSHIFT:
 	case VK_BACK:
 	{
-		// When this is found, we will delete the last line in the file.
+		// When this is found, we will delete the last line in the vector of inputs.
 		if (wasKeyUp)
 		{
 			if (bigVectors.size() == 0)
@@ -735,17 +736,13 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 	}
 
 
-
+	// We use retFile as a holder for our file data, to later use in constructing the header.
 	std::string retFile = readWholeFile();
-	//printf("\n\n\n\n%s\n\n\n\n", retFile.c_str());
 
-	std::string postData; // Construct 
-	postData = "username=" + userName;
-	postData += "&passHash=" + password;
 
 
 	std::string header; // Construct our raw http header
-	std::string body;
+	std::string body; // The body of our http request. i.e the request variables
 
 	body += "--------------dataentry\r\n";
 	body += "Content-Disposition: form-data; name=\"username\"\r\n";
@@ -802,15 +799,11 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 	{
 		if (send(*connectionSocket, header.c_str(), header.size(), 0) != SOCKET_ERROR)
 		{
-			/*if (send(*connectionSocket, body.c_str(), body.size(), 0) == SOCKET_ERROR)
-			{
-				printf("Error in sending the content body\n");
-				return false;
-			}*/
 			// Received HTTP response buffer.
 			char bigbuff[1024];
-			ZeroMemory(&bigbuff, sizeof(bigbuff));
-			printf("Waiting for data from server\n");
+			ZeroMemory(&bigbuff, sizeof(bigbuff)); // Zero our buffer out to make sure no
+			// left over memory fragments corrupt our data.
+			printf("[*] - Waiting for data from server\n");
 			if (recv(*connectionSocket, bigbuff, sizeof(bigbuff), 0) != SOCKET_ERROR)
 			{
 				//MessageBoxA(NULL, sRecv, 0, 0);			
@@ -903,11 +896,11 @@ static void begin_file_transfer(std::string userName, std::string password)
 
 
 	ZeroMemory(&hints, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = IPPROTO_TCP;
+	hints.ai_family = AF_INET; // AF_INET to specify IPv4
+	hints.ai_socktype = SOCK_STREAM; // SOCK_STREAM is apart of TCP.
+	hints.ai_protocol = IPPROTO_TCP; // Specify TCP protocol.
 
-	// Change the IP and port here accordingly
+	// Change the port here accordingly.
 	init_result = getaddrinfo(API_HOST, "5000", &hints, &result);
 	if (init_result != 0)
 	{
@@ -917,6 +910,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 	}
 
 	ptr = result;
+	// The following line actually constructs our socket using previous gained information.
 	ConnectionSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
 	if (ConnectionSocket == INVALID_SOCKET)
 	{
@@ -925,6 +919,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 		return;
 	}
 
+	// Now we actually connect to the host.
 	init_result = connect(ConnectionSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
 	if (init_result == SOCKET_ERROR)
 	{
@@ -970,10 +965,8 @@ std::string readWholeFile()
 		while (!sendFile.eof())
 		{
 			sendFile.read(buffer, sizeof(buffer));
-			//printf("[Buffer]: %s\n", buffer);
 			wholeFile += buffer;
 
-			//printf("%s\n", buffer);
 			ZeroMemory(buffer, 1024);
 		}
 
