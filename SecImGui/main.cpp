@@ -1,5 +1,12 @@
-// dear imgui: standalone example application for DirectX 10
-// If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
+// This is the main file for our Cristallo project front end. In here is all the functions used to
+// interface with the Cristallo API python script using HTTP.
+
+// Cristallo is a transparent secondary authentication method which runs alongside the well used
+// username and password combination, except this also uses keystroke information such as latency, keydown time
+// and the time elapsed between keys to help determine if the user is who they say they are. 
+
+// The API backend currently uses a MLPClassifier algorithm, with lbfgs solver and the activation of relu.
+
 #include <winsock2.h>
 #include "imgui.h"
 #include "imgui_internal.h"
