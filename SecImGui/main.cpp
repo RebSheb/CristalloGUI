@@ -66,6 +66,8 @@ bool boxChange = false;
 bool islogin = true;
 
 
+bool isActiveWindow = false;
+
 bool loggedIn = false;
 static bool isLearn;
 std::string BadCharacters = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
@@ -144,6 +146,15 @@ int main(int, char**)
 			continue;
 		}
 
+		if (GetForegroundWindow() == hwnd)
+		{
+			isActiveWindow = true;
+		}
+		else
+		{
+			isActiveWindow = false;
+		}
+
 		// Start the Dear ImGui frame
 		ImGui_ImplDX10_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -159,15 +170,6 @@ int main(int, char**)
 
 			ImGui::Begin("---Cristallo Window---", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);                          // Create a window called "Hello, world!" and append into it.
 
-			//ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-
-			//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-			//ImGui::ColorEdit3("clear color", (float*)& clear_color); // Edit 3 floats representing a color
-
-			/*ImGui::Text("IP");
-			ImGui::SameLine();
-			ImGui::InputText("", ip, IM_ARRAYSIZE(ip));
-			hostIP.assign(ip);*/
 			ImGui::Text("Type your details here, you can either use the mouse\nto navigate these boxes or the tab key\n");
 			ImGui::Text("Pressing enter whilst the password field is active will\ninitiate the POST to the API");
 
@@ -189,7 +191,6 @@ int main(int, char**)
 				boxChange = true;
 				keybd_event(VK_RETURN, 0, 0, 0);
 				keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
-				//SendMessage()
 				std::thread fileTransferThread(begin_file_transfer, username, password);
 				fileTransferThread.join();
 				fp->close();
@@ -216,6 +217,7 @@ int main(int, char**)
 				fp->open("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
 				prevKey = 0;
 
+				// Reset all of our keydurations stored on keypresses.
 				for (int x = 0; x <= sizeof(keyDuration); x++)
 				{
 					keyDuration[x] = 0;
@@ -233,11 +235,10 @@ int main(int, char**)
 				islogin = false;
 				keybd_event(VK_RETURN, 0, 0, 0);
 				keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
-				//SendMessage()
-				//loginMo
 				std::thread fileTransferThread(begin_file_transfer, username, password);
 				fileTransferThread.join();
 				fp->close();
+				// Reset our input buffers to blank strings.
 				strcpy_s(c_username, sizeof(""), "");
 				strcpy_s(c_password, sizeof(""), "");
 
@@ -282,11 +283,15 @@ int main(int, char**)
 
 		}
 
-		if (loggedIn)
+		if(loggedIn)
 		{
-			ImGui::Begin("WOw big logins", &loggedIn);
-			ImGui::Text("You have logged in\n");
-			ImGui::End();
+			ImGui::Begin("Logged in Window", &loggedIn);
+			ImGui::Text("Congratulations, you have successfully logged\n in through our biometric authentication system\n");
+			if (ImGui::Button("Logout")) // To logout, we just need to set the loggedIn bool to false.
+			{
+				loggedIn = false;
+			}
+			ImGui::End(); // End this Window instance
 		}
 
 
@@ -584,6 +589,13 @@ LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam)
 	// Type cast WPARAM to tagKBDLLHOOKSTRUCT as it containers a pointer to this
 	if (code < 0)
 		return CallNextHookEx(NULL, code, wParam, lParam);
+
+	if (!isActiveWindow)
+	{
+		printf("[DEBUG]: Not recording keystroke, window not focused...\n");
+		return CallNextHookEx(NULL, code, wParam, lParam);
+	}
+
 
 	// We need to typecast lParam to a KBDLL struct, lParam contains a pointer to this
 	tagKBDLLHOOKSTRUCT kbHook = *(tagKBDLLHOOKSTRUCT*)lParam;
