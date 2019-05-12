@@ -65,12 +65,12 @@ DWORD prevKey = 0x0;
 bool boxChange = false;
 bool islogin = true;
 
-bool isActiveWindow = false;
 
+bool isActiveWindow = false;
 
 bool loggedIn = false;
 static bool isLearn;
-std::string nonochars = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
+std::string BadCharacters = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
 // SCAN CODE, TIMESTAMP, DURATION
 // SCAN CODE IS KEY PRESSED
 // TIMESTAMP IS WHEN KEY PRESSED
@@ -86,7 +86,6 @@ int main(int, char**)
 	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("Cristallo"), NULL };
 	::RegisterClassEx(&wc);
 	HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Cristallo Login"), WS_OVERLAPPEDWINDOW, 100, 100, 600, 400, NULL, NULL, wc.hInstance, NULL);
-
 	// Initialize Direct3D
 	if (!CreateDeviceD3D(hwnd))
 	{
@@ -94,25 +93,18 @@ int main(int, char**)
 		::UnregisterClass(wc.lpszClassName, wc.hInstance);
 		return 1;
 	}
-
 	// Show the window
 	::ShowWindow(hwnd, SW_SHOWDEFAULT);
 	::UpdateWindow(hwnd);
-
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
-
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
-
 	// Setup Platform/Renderer bindings
 	ImGui_ImplWin32_Init(hwnd);
 	ImGui_ImplDX10_Init(g_pd3dDevice);
-
-
-
 	// Our state
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 	std::string hostIP;
@@ -140,7 +132,7 @@ int main(int, char**)
 	
 	while (msg.message != WM_QUIT)
 	{
-		
+
 		
 		// Poll and handle messages (inputs, window resize, etc.)
 		// You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -153,7 +145,7 @@ int main(int, char**)
 			::DispatchMessage(&msg);
 			continue;
 		}
-		
+
 		if (GetForegroundWindow() == hwnd)
 		{
 			isActiveWindow = true;
@@ -162,7 +154,7 @@ int main(int, char**)
 		{
 			isActiveWindow = false;
 		}
-		
+
 		// Start the Dear ImGui frame
 		ImGui_ImplDX10_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -176,18 +168,8 @@ int main(int, char**)
 			static bool console;
 			
 
-
 			ImGui::Begin("---Cristallo Window---", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);                          // Create a window called "Hello, world!" and append into it.
 
-			//ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-
-			//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-			//ImGui::ColorEdit3("clear color", (float*)& clear_color); // Edit 3 floats representing a color
-
-			/*ImGui::Text("IP");
-			ImGui::SameLine();
-			ImGui::InputText("", ip, IM_ARRAYSIZE(ip));
-			hostIP.assign(ip);*/
 			ImGui::Text("Type your details here, you can either use the mouse\nto navigate these boxes or the tab key\n");
 			ImGui::Text("Pressing enter whilst the password field is active will\ninitiate the POST to the API");
 
@@ -209,7 +191,6 @@ int main(int, char**)
 				boxChange = true;
 				keybd_event(VK_RETURN, 0, 0, 0);
 				keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
-				//SendMessage()
 				std::thread fileTransferThread(begin_file_transfer, username, password);
 				fileTransferThread.join();
 				fp->close();
@@ -236,6 +217,7 @@ int main(int, char**)
 				fp->open("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
 				prevKey = 0;
 
+				// Reset all of our keydurations stored on keypresses.
 				for (int x = 0; x <= sizeof(keyDuration); x++)
 				{
 					keyDuration[x] = 0;
@@ -253,11 +235,10 @@ int main(int, char**)
 				islogin = false;
 				keybd_event(VK_RETURN, 0, 0, 0);
 				keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
-				//SendMessage()
-				//loginMo
 				std::thread fileTransferThread(begin_file_transfer, username, password);
 				fileTransferThread.join();
 				fp->close();
+				// Reset our input buffers to blank strings.
 				strcpy_s(c_username, sizeof(""), "");
 				strcpy_s(c_password, sizeof(""), "");
 
@@ -302,11 +283,15 @@ int main(int, char**)
 
 		}
 
-		if (loggedIn)
+		if(loggedIn)
 		{
-			ImGui::Begin("WOw big logins", &loggedIn);
-			ImGui::Text("You have logged in\n");
-			ImGui::End();
+			ImGui::Begin("Logged in Window", &loggedIn);
+			ImGui::Text("Congratulations, you have successfully logged\n in through our biometric authentication system\n");
+			if (ImGui::Button("Logout")) // To logout, we just need to set the loggedIn bool to false.
+			{
+				loggedIn = false;
+			}
+			ImGui::End(); // End this Window instance
 		}
 
 
@@ -415,8 +400,6 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 
 // Cristallo API Functions
-
-
 static void initialize_hook_thread()
 {
 	HHOOK myKbHook = NULL;
@@ -446,10 +429,6 @@ static void initialize_hook_thread()
 	}
 
 	printf("[+] - File open, creating hook\n");
-
-	//fprintf_s(fp, "KeyCode,Timestamp,Duration,Latency\n");
-
-
 	// Need to call SetWindowsHookEx with code of either 2 or 13.
 	// * 13 is Lowlevel Keyboard hook
 	// 2 is generic keyboard hook
@@ -513,6 +492,8 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 	case VK_LWIN:
 	case VK_RWIN:
 	case VK_TAB:
+	case VK_LMENU:
+	case VK_RMENU:
 		return;
 	case VK_RETURN:
 	{
@@ -540,7 +521,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 
 	if (wasKeyUp == false) // Was it not a key up event?
 	{
-		if (nonochars.rfind((char)(char)mapKey) != std::string::npos) // is the character sent a punctuation character or anything?
+		if (BadCharacters.rfind((char)(char)mapKey) != std::string::npos) // is the character sent a punctuation character or anything?
 			return;
 
 		stringStore[vkCode] += std::to_string(mapKey);
@@ -554,7 +535,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 
 	else if (wasKeyUp)
 	{
-		if (nonochars.rfind((char)(char)mapKey) != std::string::npos)
+		if (BadCharacters.rfind((char)(char)mapKey) != std::string::npos)
 			return;
 
 
@@ -579,13 +560,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 			// Latency is
 			// TimeReleased - keyDuration[lastKey]
 			stringStore[vkCode] += ',';
-			/*if (boxChange)
-			{
-				//stringStore[vkCode] += "0";
-				keyDuration[prevKey] = GetTickCount();
-				boxChange = false;
-			}
-			else*/ if (vkCode != prevKey)
+			if (vkCode != prevKey)
 			{
 				stringStore[vkCode] += std::to_string((keyDuration[vkCode] + (time - keyDuration[vkCode])) - keyDuration[prevKey]);
 			}
@@ -612,21 +587,19 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam)
 {
 	// Type cast WPARAM to tagKBDLLHOOKSTRUCT as it containers a pointer to this
-
 	if (code < 0)
 		return CallNextHookEx(NULL, code, wParam, lParam);
 
-
-	// We need to typecast lParam to a KBDLL struct, lParam contains a pointer to this
-	tagKBDLLHOOKSTRUCT kbHook = *(tagKBDLLHOOKSTRUCT*)lParam;
-	
 	if (!isActiveWindow)
 	{
 		printf("[DEBUG]: Not recording keystroke, window not focused...\n");
 		return CallNextHookEx(NULL, code, wParam, lParam);
 	}
 
-	switch (wParam) // wParam is the Window Message.sdasdas
+
+	// We need to typecast lParam to a KBDLL struct, lParam contains a pointer to this
+	tagKBDLLHOOKSTRUCT kbHook = *(tagKBDLLHOOKSTRUCT*)lParam;
+	switch (wParam) // wParam is the Window Message.
 	{
 	case WM_SYSKEYUP:
 	{
@@ -695,14 +668,14 @@ bool hash_password(std::string password, std::string * outPassword)
 		NULL, BCRYPT_HASH_REUSABLE_FLAG);
 	if (!NT_SUCCESS(Status))
 	{
-		printf("Error opening CryptoAlgorithmProvider\n");
+		printf("[!] - Error opening CryptoAlgorithmProvider\n");
 		return false;
 	}
 
 	Status = BCryptGetProperty(AlgHandle, BCRYPT_HASH_LENGTH, (PBYTE)& HashLength, sizeof(HashLength), &ResultLength, 0);
 	if (!NT_SUCCESS(Status))
 	{
-		printf("Failure to get BCryptProperty\n");
+		printf("[!] - Failure to get BCryptProperty\n");
 		return false;
 	}
 	hash.resize(HashLength);
@@ -713,7 +686,7 @@ bool hash_password(std::string password, std::string * outPassword)
 	if (Hash == NULL)
 	{
 		//Status = STATUS_NO_MEMORY;
-		printf("No memory for HeapAllocation for Hash\n");
+		printf("[!] - No memory for HeapAllocation for Hash\n");
 		return false;
 	}
 
@@ -721,7 +694,7 @@ bool hash_password(std::string password, std::string * outPassword)
 	Status = BCryptCreateHash(AlgHandle, &HashHandle, NULL, 0, NULL, 0, 0);
 	if (!NT_SUCCESS(Status))
 	{
-		printf("Failure to CryptCreateHash\n");
+		printf("[!] - Failure to CryptCreateHash\n");
 		return false;
 	}
 	
@@ -730,7 +703,7 @@ bool hash_password(std::string password, std::string * outPassword)
 		(PBYTE)password.c_str(), password.size(), 0);
 	if (!NT_SUCCESS(Status))
 	{
-		printf("Failure to BCryptHashData\n");
+		printf("[!] - Failure to BCryptHashData\n");
 		return false;
 	}
 
@@ -738,7 +711,7 @@ bool hash_password(std::string password, std::string * outPassword)
 	Status = BCryptFinishHash(HashHandle, hash.data(), HashLength, 0);
 	if (!NT_SUCCESS(Status))
 	{
-		printf("Failure to BCryptFinishHash\n");
+		printf("[!] - Failure to BCryptFinishHash\n");
 		return false;
 	}
 
@@ -757,7 +730,7 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 {
 	if (connectionSocket == nullptr || *connectionSocket == INVALID_SOCKET)
 	{
-		printf("Cannot authorize user... Connection socket is bad.\n");
+		printf("[!] - Cannot authorize user... Connection socket is bad.\n");
 		return false;
 	}
 
@@ -845,31 +818,51 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 				printf("%s\n", responseData.c_str());
 				if (responseData.find("200") != std::string::npos)
 				{
-					printf("Successfully authorized user\n");
+					printf("[+] - Successfully authorized user\n");
 					
 					return true;
 				}
+				else if (responseData.find("201") != std::string::npos)
+				{
+					printf("[+] - Successfully created a new user\n");
+					return false;
+				}
+				else if (responseData.find("401") != std::string::npos)
+				{
+					printf("[!] - Biometric rejection...\n");
+					MessageBoxA(NULL, "Biometrically rejected. Try again if this is you", "Error", MB_ICONERROR | MB_OK);
+					return false;
+				}
+				else if (responseData.find("402") != std::string::npos)
+				{
+					printf("[!] - Invalid credentials...\n");
+					MessageBoxA(NULL, "Invalid credentials entered.", "Error", MB_ICONERROR | MB_OK);
+					return false;
+				}
 				else
 				{
-					printf("Error occured.\n[Response]: %s\n", responseData.c_str());
+					std::string errMsg;
+					//printf("Error occured.\n[Response]: %s\n", responseData.c_str());
+					errMsg = "Error occured.\n[Response]\n" + responseData;
+					MessageBoxA(NULL, errMsg.c_str(), "Error", MB_ICONERROR | MB_OK);
 					return false;
 				}
 			}
 			else
 			{
-				printf("Failure to receive information from the server...\n");
+				printf("[!] - Failure to receive information from the server...\n");
 				return false;
 			}
 		}
 		else
 		{
-			printf("Failure to send information to the server...\n");
+			printf("[!] - Failure to send information to the server...\n");
 			return false;
 		}
 	}
 	else
 	{
-		printf("Something went wrong with assigning the header?\n");
+		printf("[!] - Something went wrong with assigning the header?\n");
 		return false;
 	}
 
@@ -883,13 +876,11 @@ static void begin_file_transfer(std::string userName, std::string password)
 	std::string outPass; // Hash our password
 	if (!hash_password(password, &outPass))
 	{
-		printf("Something went wrong in hashing password...\n");
+		printf("[!] - Something went wrong in hashing password...\n");
 		return;
 	}
 
 #pragma region WinSock
-
-
 
 	WSADATA* wsaData = new WSADATA;
 	struct addrinfo* result = NULL,
@@ -945,10 +936,15 @@ static void begin_file_transfer(std::string userName, std::string password)
 	if (!(authorize_user(&ConnectionSocket, userName, outPass)))
 	{
 		printf("Bad authentication details...\n");
+		//MessageBoxA(NULL, "Login unsuccessful\n", "Error", MB_ICONERROR | MB_OK);
 		closesocket(ConnectionSocket);
 		ConnectionSocket = INVALID_SOCKET;
 		WSACleanup();
 		return;
+	}
+	else
+	{
+		loggedIn = true;
 	}
 
 
