@@ -839,6 +839,11 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 					MessageBoxA(NULL, "Invalid credentials entered.", "Error", MB_ICONERROR | MB_OK);
 					return false;
 				}
+				else if (responseData.find("409") != std::string::npos)
+				{
+					printf("[!] - This user might already exist in the database?\n");
+					return false;
+				}
 				else
 				{
 					std::string errMsg;
