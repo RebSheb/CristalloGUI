@@ -173,7 +173,7 @@ int main(int, char**)
 			ImGui::Text("Type your details here, you can either use the mouse\nto navigate these boxes or the tab key\n");
 			ImGui::Text("Pressing enter whilst the password field is active will\ninitiate the POST to the API");
 
-			ImGui::Checkbox("Log in test mode?", &loggedIn);
+			//ImGui::Checkbox("Log in test mode?", &loggedIn);
 			ImGui::Checkbox("Console Window?", &console);
 
 
