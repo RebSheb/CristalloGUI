@@ -68,7 +68,7 @@ bool islogin = true;
 
 bool loggedIn = false;
 static bool isLearn;
-std::string nonochars = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
+std::string BadCharacters = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
 // SCAN CODE, TIMESTAMP, DURATION
 // SCAN CODE IS KEY PRESSED
 // TIMESTAMP IS WHEN KEY PRESSED
@@ -84,7 +84,6 @@ int main(int, char**)
 	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("Cristallo"), NULL };
 	::RegisterClassEx(&wc);
 	HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Cristallo Login"), WS_OVERLAPPEDWINDOW, 100, 100, 600, 400, NULL, NULL, wc.hInstance, NULL);
-
 	// Initialize Direct3D
 	if (!CreateDeviceD3D(hwnd))
 	{
@@ -92,25 +91,18 @@ int main(int, char**)
 		::UnregisterClass(wc.lpszClassName, wc.hInstance);
 		return 1;
 	}
-
 	// Show the window
 	::ShowWindow(hwnd, SW_SHOWDEFAULT);
 	::UpdateWindow(hwnd);
-
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
-
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
-
 	// Setup Platform/Renderer bindings
 	ImGui_ImplWin32_Init(hwnd);
 	ImGui_ImplDX10_Init(g_pd3dDevice);
-
-
-
 	// Our state
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 	std::string hostIP;
@@ -403,8 +395,6 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 
 // Cristallo API Functions
-
-
 static void initialize_hook_thread()
 {
 	HHOOK myKbHook = NULL;
@@ -434,10 +424,6 @@ static void initialize_hook_thread()
 	}
 
 	printf("[+] - File open, creating hook\n");
-
-	//fprintf_s(fp, "KeyCode,Timestamp,Duration,Latency\n");
-
-
 	// Need to call SetWindowsHookEx with code of either 2 or 13.
 	// * 13 is Lowlevel Keyboard hook
 	// 2 is generic keyboard hook
@@ -501,6 +487,8 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 	case VK_LWIN:
 	case VK_RWIN:
 	case VK_TAB:
+	case VK_LMENU:
+	case VK_RMENU:
 		return;
 	case VK_RETURN:
 	{
@@ -528,7 +516,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 
 	if (wasKeyUp == false) // Was it not a key up event?
 	{
-		if (nonochars.rfind((char)(char)mapKey) != std::string::npos) // is the character sent a punctuation character or anything?
+		if (BadCharacters.rfind((char)(char)mapKey) != std::string::npos) // is the character sent a punctuation character or anything?
 			return;
 
 		stringStore[vkCode] += std::to_string(mapKey);
@@ -542,7 +530,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 
 	else if (wasKeyUp)
 	{
-		if (nonochars.rfind((char)(char)mapKey) != std::string::npos)
+		if (BadCharacters.rfind((char)(char)mapKey) != std::string::npos)
 			return;
 
 
@@ -567,13 +555,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 			// Latency is
 			// TimeReleased - keyDuration[lastKey]
 			stringStore[vkCode] += ',';
-			/*if (boxChange)
-			{
-				//stringStore[vkCode] += "0";
-				keyDuration[prevKey] = GetTickCount();
-				boxChange = false;
-			}
-			else*/ if (vkCode != prevKey)
+			if (vkCode != prevKey)
 			{
 				stringStore[vkCode] += std::to_string((keyDuration[vkCode] + (time - keyDuration[vkCode])) - keyDuration[prevKey]);
 			}
@@ -600,18 +582,11 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam)
 {
 	// Type cast WPARAM to tagKBDLLHOOKSTRUCT as it containers a pointer to this
-
 	if (code < 0)
 		return CallNextHookEx(NULL, code, wParam, lParam);
 
-
 	// We need to typecast lParam to a KBDLL struct, lParam contains a pointer to this
 	tagKBDLLHOOKSTRUCT kbHook = *(tagKBDLLHOOKSTRUCT*)lParam;
-	if (GetForegroundWindow() == GetActiveWindow())
-	{
-		printf("BAzinga");
-	}
-
 	switch (wParam) // wParam is the Window Message.
 	{
 	case WM_SYSKEYUP:
@@ -837,7 +812,10 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 				}
 				else
 				{
-					printf("Error occured.\n[Response]: %s\n", responseData.c_str());
+					std::string errMsg;
+					//printf("Error occured.\n[Response]: %s\n", responseData.c_str());
+					errMsg = "Error occured.\n[Response]\n" + responseData;
+					MessageBoxA(NULL, errMsg.c_str(), "Error", MB_ICONERROR | MB_OK);
 					return false;
 				}
 			}
